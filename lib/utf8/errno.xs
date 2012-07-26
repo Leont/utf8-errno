@@ -63,29 +63,24 @@ static int new_magic_get(pTHX_ SV *sv, MAGIC *mg) {
 	}
 }
 
-MGVTBL* _get_vtable(pTHX_ SV* sv) {
-	static MGVTBL new_vtable;
-	MAGIC* original = mg_find(sv, PERL_MAGIC_sv);
-	Copy(original->mg_virtual, &new_vtable, 1, MGVTBL);
-	new_vtable.svt_get = new_magic_get;
-}
-
 MGVTBL* get_vtable(pTHX_ SV* sv) {
 	static int inited = 0;
-	static MGVTBL* new_vtable;
+	static MGVTBL new_vtable;
 	if (!inited) {
-		new_vtable = _get_vtable(aTHX_ sv);
+		MAGIC* original = mg_find(sv, PERL_MAGIC_sv);
+		Copy(original->mg_virtual, &new_vtable, 1, MGVTBL);
+		new_vtable.svt_get = new_magic_get;
 		inited = 1;
 	}
-	return new_vtable;
+	return &new_vtable;
 }
 
-MODULE = utf8::errno                PACKAGE = utf8::errno
+MODULE = utf8::errno				PACKAGE = utf8::errno
 
 void
 _reset_global(var)
 	SV* var;
-    CODE:
+	CODE:
 		MAGIC* magic = mg_find(var, PERL_MAGIC_sv);
 		magic->mg_virtual = get_vtable(aTHX_ var);
 
